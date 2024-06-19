@@ -15,7 +15,8 @@ import MovieDetail from "./MovieDetail";
 const Stack = createStackNavigator();
 const Profile = () => {
   const navigation = useNavigation();
-  const { suggestedMovieList, setSuggestedMovieList } = useContext(Context);
+  const { suggestedMovieList, setSuggestedMovieList, setUsername } =
+    useContext(Context);
   useFocusEffect(
     useCallback(() => {
       if (suggestedMovieList) {
@@ -59,6 +60,14 @@ const Profile = () => {
           }}
         >
           <Text className="text-lg font-semibold text-teal-500">Ratings</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          className="items-center justify-center w-4/5 h-20 my-4 bg-red-800 rounded-full"
+          onPress={() => {
+            setUsername(null);
+          }}
+        >
+          <Text className="text-lg font-semibold text-white">Logout</Text>
         </TouchableOpacity>
       </View>
     </ScrollView>

@@ -9,7 +9,7 @@ import { Badge } from "@rneui/themed";
 import { apiBaseUrl } from "./API";
 import { FlatList } from "react-native-gesture-handler";
 import Loading from "./Loading";
-import { insertRecentMovie, fetchGenreScore, checkIfAllTwos } from "./Database";
+import { insertRecentMovie } from "./Database";
 import { useNavigation, useIsFocused } from "@react-navigation/native";
 
 const Stack = createStackNavigator();
@@ -40,26 +40,33 @@ function SuggestionsStack() {
 }
 
 const Suggestions = () => {
-  const { suggestedMovieList, setSuggestedMovieList } = useContext(Context);
+  const { suggestedMovieList, setSuggestedMovieList, username } =
+    useContext(Context);
   const isFocused = useIsFocused();
   const navigation = useNavigation();
-  const [genreScoreList, setGenreScoreList] = useState([]);
-  const [genreUsedForSearching, setGenreUsedForSearching] = useState([]);
-  const [isAllTwos, setIsAllTwos] = useState(true);
-  const [isGenreListSorted, setIsGenreListSorted] = useState(false);
-  const [isGenreScoreFetched, setIsGenreScoreFetched] = useState(false);
+  const [genreList, setGenreList] = useState([]);
+  // const [genreUsedForSearching, setGenreUsedForSearching] = useState([]);
+  // const [isAllTwos, setIsAllTwos] = useState(true);
+  // const [isGenreListSorted, setIsGenreListSorted] = useState(false);
+  // const [isGenreScoreFetched, setIsGenreScoreFetched] = useState(false);
   const [movieList, setMovieList] = useState([]);
   useEffect(() => {
     if (isFocused && !suggestedMovieList) {
-      getMovies();
+      getGenres();
+      //getMovies();
     }
     if (!isFocused && !suggestedMovieList) {
-      setGenreScoreList([]);
-      setIsGenreScoreFetched(false);
-      setIsAllTwos(true);
-      setIsGenreListSorted(false);
+      setGenreList([]);
+      // setIsGenreScoreFetched(false);
+      // setIsAllTwos(true);
+      // setIsGenreListSorted(false);
     }
   }, [isFocused]);
+  useEffect(() => {
+    if (genreList.length > 0) {
+      getMovies();
+    }
+  }, [genreList]);
   // useFocusEffect(
   //   useCallback(() => {
   //     if (true) {
@@ -74,110 +81,104 @@ const Suggestions = () => {
   //   }, [])
   // );
 
-  const fetchGenreScoreFromDB = async () => {
-    try {
-      const list = await fetchGenreScore();
-      return list;
-    } catch (error) {
-      console.error("Error fetching genre score for suggestion: " + error);
-    }
+  // const fetchGenreScoreFromDB = async () => {
+  //   try {
+  //     const list = await fetchGenreScore();
+  //     return list;
+  //   } catch (error) {
+  //     console.error("Error fetching genre score for suggestion: " + error);
+  //   }
+  // };
+
+  // const checkIfAllTwosFromDB = async () => {
+  //   try {
+  //     const isTwos = await checkIfAllTwos();
+  //     return isTwos;
+  //   } catch (error) {
+  //     console.error("Error checking zeroes: " + error);
+  //   }
+  // };
+  // const sortGenreList = (list) => {
+  //   let sortedGenres = list.sort((a, b) => b.score - a.score);
+  //   return sortedGenres;
+  // };
+  // const getGenresForSearching = (arr, zeroCondition) => {
+  //   //console.log("trigger3");c
+  //   if (zeroCondition === true) {
+  //     console.log("whoops");
+  //     return;
+  //   }
+  //   if (zeroCondition === false) {
+  //     //console.log("ye");
+  //     const b = arr.filter((genre) => genre.score < 2);
+  //     //console.log("b length:", b.length);
+  //     if (b.length == 19) {
+  //       console.log("y2");
+  //       const c = randomizeList(arr);
+  //       //console.log(c);
+  //       const d = c.splice(0, 3);
+  //       //setGenreUsedForSearching(d);
+  //       console.log("genres used for search:", d);
+  //       return d;
+  //     } else {
+  //       let listWillUse = [];
+  //       let listToSplice = arr.slice();
+  //       for (let i = 0; i < 3; i++) {
+  //         if (arr[i].score != 2) {
+  //           //console.log(genreScoreList[i]);
+  //           //console.log("list before:", listToSplice);
+  //           listWillUse.push(arr[i]);
+  //           listToSplice.splice(0, 1);
+  //           //console.log("list left:", listToSplice);
+  //         } else if (arr[i].score === 2) {
+  //           //console.log("y3");
+  //           listToSplice = randomizeList(listToSplice);
+  //           const c = listToSplice.splice(0, 1);
+  //           listWillUse.push(c[0]);
+  //           //console.log("listWillUse:", listWillUse);
+  //         }
+  //       }
+  //       //setGenreUsedForSearching(listWillUse);
+  //       console.log("genres used for search:", listWillUse);
+  //       return listWillUse;
+  //     }
+  //   }
+  // };
+  // const randomizeList = (list) => {
+  //   for (let i = list.length - 1; i > 0; i--) {
+  //     let j = Math.floor(Math.random() * (i + 1));
+  //     let k = list[i];
+  //     list[i] = list[j];
+  //     list[j] = k;
+  //   }
+  //   return list;
+  // };
+  const getGenres = () => {
+    axios
+      .get(`${apiBaseUrl}/user/${username}/top-genres`)
+      .then((response) => {
+        console.log(response.data);
+        setGenreList(response.data);
+      })
+      .catch((error) => {
+        console.error("Error getting genres:", error);
+      });
+  };
+  const getMovies = () => {
+    axios
+      .get(`${apiBaseUrl}/movie/search-by-genre?genreIds=${genreList}`)
+      .then((res) => {
+        //console.log(res.data);
+        setMovieList(res.data);
+        setSuggestedMovieList(res.data);
+        //setIsAllZeroes(false);
+        //console.log("geting Movies now");
+      })
+      .catch((err) => {
+        console.error("Error getting suggested movie:", err);
+      });
   };
 
-  const checkIfAllTwosFromDB = async () => {
-    try {
-      const isTwos = await checkIfAllTwos();
-      return isTwos;
-    } catch (error) {
-      console.error("Error checking zeroes: " + error);
-    }
-  };
-  const sortGenreList = (list) => {
-    let sortedGenres = list.sort((a, b) => b.score - a.score);
-    return sortedGenres;
-  };
-  const getGenresForSearching = (arr, zeroCondition) => {
-    //console.log("trigger3");c
-    if (zeroCondition === true) {
-      console.log("whoops");
-      return;
-    }
-    if (zeroCondition === false) {
-      //console.log("ye");
-      const b = arr.filter((genre) => genre.score < 2);
-      //console.log("b length:", b.length);
-      if (b.length == 19) {
-        console.log("y2");
-        const c = randomizeList(arr);
-        //console.log(c);
-        const d = c.splice(0, 3);
-        //setGenreUsedForSearching(d);
-        console.log("genres used for search:", d);
-        return d;
-      } else {
-        let listWillUse = [];
-        let listToSplice = arr.slice();
-        for (let i = 0; i < 3; i++) {
-          if (arr[i].score != 2) {
-            //console.log(genreScoreList[i]);
-            //console.log("list before:", listToSplice);
-            listWillUse.push(arr[i]);
-            listToSplice.splice(0, 1);
-            //console.log("list left:", listToSplice);
-          } else if (arr[i].score === 2) {
-            //console.log("y3");
-            listToSplice = randomizeList(listToSplice);
-            const c = listToSplice.splice(0, 1);
-            listWillUse.push(c[0]);
-            //console.log("listWillUse:", listWillUse);
-          }
-        }
-        //setGenreUsedForSearching(listWillUse);
-        console.log("genres used for search:", listWillUse);
-        return listWillUse;
-      }
-    }
-  };
-  const randomizeList = (list) => {
-    for (let i = list.length - 1; i > 0; i--) {
-      let j = Math.floor(Math.random() * (i + 1));
-      let k = list[i];
-      list[i] = list[j];
-      list[j] = k;
-    }
-    return list;
-  };
-  const getMovies = async () => {
-    //console.log("trigger 1");
-    const a = await checkIfAllTwosFromDB();
-    //console.log("a", a);
-    if (a.length === 0) {
-      setIsAllTwos(true);
-      return;
-    }
-    if (a.length > 0) {
-      setIsAllTwos(false);
-      const b = await fetchGenreScoreFromDB();
-      const b_sorted = sortGenreList(b);
-      //console.log("b_sorted:", b);
-      //setGenreScoreList(b_sorted);
-      const c = getGenresForSearching(b_sorted, a.length === 0);
-      //console.log("c", c);
-      let gerneIdList = c.map((genre) => genre.genreId).join(", ");
-      //console.log(gerneIdList);
-      axios
-        .get(`${apiBaseUrl}/movie/search-by-genre?genreIds=${gerneIdList}`)
-        .then((res) => {
-          //console.log(res.data);
-          setMovieList(res.data);
-          setSuggestedMovieList(res.data);
-          //setIsAllZeroes(false);
-          //console.log("geting Movies now");
-        })
-        .catch((err) => {
-          console.error(err);
-        });
-    }
-  };
   const handleInsertRecentMovie = async (
     movieId,
     posterImageUrl,
@@ -194,7 +195,7 @@ const Suggestions = () => {
   };
   return (
     <View className="w-full h-full bg-teal-500">
-      {isAllTwos ? (
+      {genreList.length === 0 ? (
         <View className="flex items-center justify-center w-full h-full bg-teal-500">
           <Text className="px-4 text-2xl font-extrabold text-center text-blue-800">
             Mark movies as Favorite, or rate movies to see your personalized

@@ -8,161 +8,243 @@ import {
   Dimensions,
   TouchableOpacity,
   StyleSheet,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+  ToastAndroid,
 } from "react-native";
 import { Context } from "./Context";
 import axios from "axios";
+import Toast from "react-native-toast-message";
 const windowHeight = Dimensions.get("window").height;
 import { createStackNavigator } from "@react-navigation/stack";
 import ConfirmPage from "./ConfirmPage";
-
+import { apiBaseUrl } from "./API";
 import { useNavigation, useFocusEffect } from "@react-navigation/native";
 const Stack = createStackNavigator();
 const LoginScreen = () => {
   const navigation = useNavigation();
-  const { setSessionId, approved, setApproved } = useContext(Context);
-  const [requestToken, setRequestToken] = useState("");
-  const [logInButtonDisabled, setLogInButtonDisabled] = useState(false);
-  const [failedOnce, setFailedOnce] = useState(false);
-  const fetchRequestToken = () => {
-    setRequestToken("");
+  const { setUsername } = useContext(Context);
+  const [username1, setUsername1] = useState("");
+  const [password, setPassword] = useState("");
+  const toRegister = () => {
+    navigation.navigate("RegisterScreen");
+  };
+  const handleLogin = () => {
+    console.log(username1);
+    console.log(password);
     axios
-      .get(
-        `https://api.themoviedb.org/3/authentication/token/new?api_key=841da308423b4b64ea4d57d052583683`
-      )
+      .post(`${apiBaseUrl}/user/login`, {
+        username: username1,
+        password: password,
+      })
       .then((response) => {
-        console.log("request token: " + response.data.request_token);
-        setRequestToken(response.data.request_token);
+        setUsername(response.data.username);
       })
       .catch((error) => {
         console.error(error);
+        Toast.show({
+          type: "error",
+          text1: "Error logging in",
+        });
       });
   };
-  const gettingApprovalClick = () => {
-    navigation.navigate("ConfirmPage", {
-      requestToken: requestToken,
-    });
-  };
-  useFocusEffect(
-    useCallback(() => {
-      if (!approved) {
-        setApproved(false);
-        setSessionId(null);
-        setRequestToken(null);
-        fetchRequestToken();
-      }
-    }, [approved])
-  );
-  const fetchSessionId = () => {
-    axios
-      .get(
-        `https://api.themoviedb.org/3/authentication/session/new?api_key=841da308423b4b64ea4d57d052583683&request_token=${requestToken}`
-      )
-      .then((response) => {
-        console.log("session id: " + response.data.session_id);
-        setSessionId(response.data.session_id);
-      })
-      .catch((err) => {
-        //console.error(err);
-        Alert.alert("Error", "Log in failed, please try again");
-        fetchRequestToken();
-        setLogInButtonDisabled(false);
-        setApproved(false);
-        setFailedOnce(true);
-      });
-  };
-  const buttonColor = !logInButtonDisabled
-    ? "rgb(20, 184, 166)"
-    : "rgb(115, 115, 115)";
 
   return (
     <View className="bg-violet-800 " style={{ height: windowHeight + 2000 }}>
-      <View className="items-center justify-center w-full ">
+      <KeyboardAvoidingView
+        className="items-center justify-center w-full "
+        behavior={Platform.OS === "ios" ? "padding" : "position"}
+      >
         <Image source={require("./assets/tmdb.png")} className="mb-24 mt-52" />
-        {requestToken ? (
-          <>
-            {failedOnce ? (
-              <>
-                {/* <Button
-                  title="Retry authentication"
-                  onPress={() => {
-                    gettingApprovalClick();
-                  }}
-                /> */}
-                <TouchableOpacity
-                  className="items-center justify-center h-12 bg-teal-500 rounded-lg w-44"
-                  onPress={() => {
-                    gettingApprovalClick();
-                  }}
-                >
-                  <Text className="text-base font-semibold text-blue-800">
-                    Retry authentication
-                  </Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
-                {/* <Button
-                  title="Log in via TMDB account"
-                  onPress={() => {
-                    gettingApprovalClick();
-                  }}
-                /> */}
-                <TouchableOpacity
-                  className="items-center justify-center w-56 h-12 bg-teal-500 rounded-lg"
-                  onPress={() => {
-                    gettingApprovalClick();
-                  }}
-                >
-                  <Text className="text-base font-semibold text-blue-800 ">
-                    Log in via TMDB account
-                  </Text>
-                </TouchableOpacity>
-              </>
-            )}
-            {approved ? (
-              <View className="mt-4">
-                {/* <Button
-                  disabled={logInButtonDisabled}
-                  title="Enter app"
-                  onPress={() => {
-                    setLogInButtonDisabled(true);
-                    fetchSessionId();
-                  }}
-                /> */}
-                <TouchableOpacity
-                  className="items-center justify-center w-32 h-12 bg-teal-500 rounded-lg"
-                  onPress={() => {
-                    setLogInButtonDisabled(true);
-                    fetchSessionId();
-                  }}
-                  disabled={logInButtonDisabled}
-                  style={{ backgroundColor: buttonColor }}
-                >
-                  <Text className="text-base font-semibold text-blue-800 ">
-                    Enter app
-                  </Text>
-                </TouchableOpacity>
-                {logInButtonDisabled ? (
-                  <View className="h-5 mt-6">
-                    <Loading />
-                  </View>
-                ) : null}
-              </View>
-            ) : null}
-          </>
-        ) : (
-          <>
-            <Text className="mb-10 text-lg font-extrabold text-white">
-              Initializing. Please wait...
+        <TextInput
+          style={{
+            padding: 10,
+            marginBottom: 10,
+            backgroundColor: "rgb(20, 184, 166)",
+            borderRadius: 10,
+          }}
+          inputMode="text"
+          placeholder="Enter username"
+          value={username1}
+          onChangeText={setUsername1}
+        />
+        <TextInput
+          style={{
+            padding: 10,
+            marginBottom: 10,
+            backgroundColor: "rgb(20, 184, 166)",
+            borderRadius: 10,
+          }}
+          inputMode="text"
+          placeholder="Enter password"
+          secureTextEntry
+          value={password}
+          onChangeText={setPassword}
+        />
+        <TouchableOpacity
+          className="items-center justify-center w-56 h-12 mb-20 bg-teal-500 rounded-lg"
+          onPress={handleLogin}
+        >
+          <Text className="text-base font-semibold text-blue-800 ">Log in</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          className="items-center justify-center w-56 h-12 my-2 bg-teal-500 rounded-lg"
+          onPress={toRegister}
+        >
+          <Text className="text-base font-semibold text-blue-800 ">
+            Register
+          </Text>
+        </TouchableOpacity>
+      </KeyboardAvoidingView>
+    </View>
+  );
+};
+const RegisterScreen = () => {
+  const navigation = useNavigation();
+  const { username, setUsername } = useContext(Context);
+  const [username1, setUsername1] = useState("");
+  const [password, setPassword] = useState("");
+  const [repassword, setRepassword] = useState("");
+  const [email, setEmail] = useState("");
+  const handleRegistration = () => {
+    if (!(username1 && password && repassword && email)) {
+      Toast.show({
+        type: "error",
+        text1: "Please fill in all required fields",
+      });
+      return;
+    }
+    const passwordRegex = /^(?=.*[a-zA-Z])(?=.*\W)[\w\W]{8,}$/;
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    axios
+      .get(`${apiBaseUrl}/user/${username1}`)
+      .then(() => {
+        Toast.show({
+          type: "error",
+          text1: "Username already in use",
+        });
+        return;
+      })
+      .catch((err) => {
+        //console.error(err);
+        if (!emailRegex.test(email)) {
+          Toast.show({
+            type: "error",
+            text1: "Please enter a valid email address",
+          });
+          return;
+        }
+        if (!passwordRegex.test(password)) {
+          Toast.show({
+            type: "error",
+            text1:
+              "Password: at least 8 characters, with 1 letter and 1 special character",
+          });
+          return;
+        }
+        if (
+          password.length === 0 ||
+          repassword.length === 0 ||
+          !(password === repassword)
+        ) {
+          Toast.show({
+            type: "error",
+            text1: "Passwords do not match",
+          });
+          return;
+        }
+        axios
+          .post(`${apiBaseUrl}/user`, {
+            username: username1,
+            password: password,
+            email: email,
+          })
+          .then((response) => {
+            console.log(response.data);
+            Toast.show({
+              type: "success",
+              text1: "User added successfully",
+            });
+          })
+          .catch((error) => {
+            console.error(error);
+            Toast.show({
+              type: "error",
+              text1: "Error adding user",
+            });
+          });
+      });
+  };
+  return (
+    <View className="flex flex-row w-full h-full bg-violet-800">
+      <View className="items-center justify-center w-full">
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+        >
+          <TextInput
+            style={{
+              padding: 10,
+              marginBottom: 10,
+              backgroundColor: "rgb(20, 184, 166)",
+              borderRadius: 10,
+            }}
+            inputMode="text"
+            placeholder="Enter username"
+            value={username1}
+            onChangeText={setUsername1}
+          />
+          <TextInput
+            style={{
+              padding: 10,
+              marginBottom: 10,
+              backgroundColor: "rgb(20, 184, 166)",
+              borderRadius: 10,
+            }}
+            inputMode="text"
+            placeholder="Enter email"
+            value={email}
+            onChangeText={setEmail}
+          />
+          <TextInput
+            style={{
+              padding: 10,
+              marginBottom: 10,
+              backgroundColor: "rgb(20, 184, 166)",
+              borderRadius: 10,
+            }}
+            inputMode="text"
+            placeholder="Enter password"
+            secureTextEntry
+            value={password}
+            onChangeText={setPassword}
+          />
+          <TextInput
+            style={{
+              padding: 10,
+              marginBottom: 10,
+              backgroundColor: "rgb(20, 184, 166)",
+              borderRadius: 10,
+            }}
+            inputMode="text"
+            placeholder="Re-enter password"
+            secureTextEntry
+            value={repassword}
+            onChangeText={setRepassword}
+          />
+          <TouchableOpacity
+            className="items-center justify-center w-56 h-12 bg-teal-500 rounded-lg"
+            onPress={handleRegistration}
+          >
+            <Text className="text-base font-semibold text-blue-800 ">
+              Register
             </Text>
-            <Loading />
-          </>
-        )}
+          </TouchableOpacity>
+        </KeyboardAvoidingView>
       </View>
     </View>
   );
 };
-
 const LoginStack = () => {
   return (
     <Stack.Navigator>
@@ -172,6 +254,22 @@ const LoginStack = () => {
         options={{ headerShown: false }}
       />
       <Stack.Screen
+        name="RegisterScreen"
+        component={RegisterScreen}
+        //options={{ headerShown: false }}
+        options={{
+          headerTitleAlign: "center",
+          headerTitle: "Register",
+          headerStyle: {
+            backgroundColor: "#5b21b6",
+          },
+          headerTintColor: "#14b8a6",
+          headerTitleStyle: {
+            fontWeight: "bold",
+          },
+        }}
+      />
+      {/* <Stack.Screen
         name="ConfirmPage"
         component={ConfirmPage}
         options={{
@@ -185,7 +283,7 @@ const LoginStack = () => {
             fontWeight: "bold",
           },
         }}
-      />
+      /> */}
     </Stack.Navigator>
   );
 };

@@ -60,6 +60,7 @@ const Movies = () => {
   const GetMovies = () => {
     axios
       .get(`${apiBaseUrl}/popular/${moviePage}`)
+      //.get(`http://localhost:8080/popular/${moviePage}`)
       .then((response) => {
         //console.log(response);
         setMovieResult(response.data.results);

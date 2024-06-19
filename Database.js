@@ -4,12 +4,12 @@ export const db = SQLite.openDatabase("preferences.db");
 
 export const setUpDatabase = async () => {
   db.transaction((tx) => {
-    tx.executeSql(
-      "CREATE TABLE IF NOT EXISTS favMovie (id INTEGER PRIMARY KEY AUTOINCREMENT, favMovieId INTEGER NOT NULL, name TEXT NOT NULL,  posterImageUrl TEXT, releaseDate TEXT)",
-      [],
-      () => console.log("favMovie table created successfully"),
-      (_, error) => console.error("Error creating favMoive table", error)
-    );
+    // tx.executeSql(
+    //   "CREATE TABLE IF NOT EXISTS favMovie (id INTEGER PRIMARY KEY AUTOINCREMENT, favMovieId INTEGER NOT NULL, name TEXT NOT NULL,  posterImageUrl TEXT, releaseDate TEXT)",
+    //   [],
+    //   () => console.log("favMovie table created successfully"),
+    //   (_, error) => console.error("Error creating favMoive table", error)
+    // );
     tx.executeSql(
       "CREATE TABLE IF NOT EXISTS recentMovie (id INTEGER PRIMARY KEY AUTOINCREMENT, movieId INTEGER NOT NULL, name TEXT NOT NULL,  posterImageUrl TEXT, releaseDate TEXT, popularity FLOAT NOT NULL)",
       [],
@@ -17,21 +17,21 @@ export const setUpDatabase = async () => {
       (_, error) => console.error("Error creating recentMovie table", error)
     );
 
-    tx.executeSql(
-      "CREATE TABLE IF NOT EXISTS ratedMovie (id INTEGER PRIMARY KEY AUTOINCREMENT, ratedMovieId INTEGER NOT NULL, name TEXT NOT NULL, posterImageUrl TEXT, releaseDate TEXT, ratedValue REAL NOT NULL)",
-      [],
-      () => console.log("ratedMovie table created successfully"),
-      (_, error) => console.error("Error creating ratedMovie table", error)
-    );
+    // tx.executeSql(
+    //   "CREATE TABLE IF NOT EXISTS ratedMovie (id INTEGER PRIMARY KEY AUTOINCREMENT, ratedMovieId INTEGER NOT NULL, name TEXT NOT NULL, posterImageUrl TEXT, releaseDate TEXT, ratedValue REAL NOT NULL)",
+    //   [],
+    //   () => console.log("ratedMovie table created successfully"),
+    //   (_, error) => console.error("Error creating ratedMovie table", error)
+    // );
 
-    tx.executeSql(
-      "CREATE TABLE IF NOT EXISTS genreScore (id INTEGER PRIMARY KEY AUTOINCREMENT, genreId INTEGER NOT NULL, genreName TEXT NOT NULL, score INTEGER NOT NULL)",
-      [],
-      () => {
-        console.log("genreScore table created successfully");
-      },
-      (_, error) => console.error("Error creating genreScore table", error)
-    );
+    // tx.executeSql(
+    //   "CREATE TABLE IF NOT EXISTS genreScore (id INTEGER PRIMARY KEY AUTOINCREMENT, genreId INTEGER NOT NULL, genreName TEXT NOT NULL, score INTEGER NOT NULL)",
+    //   [],
+    //   () => {
+    //     console.log("genreScore table created successfully");
+    //   },
+    //   (_, error) => console.error("Error creating genreScore table", error)
+    // );
   });
   return true;
 };

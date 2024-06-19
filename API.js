@@ -1,4 +1,4 @@
 const apiBaseUrl =
-  "https://d149-2402-800-62a9-aff2-58ba-a06d-c42c-8a06.ngrok-free.app";
+  "https://a3d7-2402-800-62a9-aff2-dc48-2292-4a17-d6c7.ngrok-free.app";
 
 export { apiBaseUrl };

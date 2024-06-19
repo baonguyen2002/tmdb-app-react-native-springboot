@@ -9,6 +9,7 @@ import { createStackNavigator } from "@react-navigation/stack";
 import ListView from "./ListView";
 import { fetchFavMovie, fetchRatedMovie } from "./Database";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import { apiBaseUrl } from "./API";
 const Tab = createMaterialTopTabNavigator();
 const Stack = createStackNavigator();
 const FavoriteRatingWatchList = ({ route }) => {
@@ -81,27 +82,24 @@ const TopTabs = ({ route }) => {
 };
 
 const List = ({ route }) => {
+  const { username } = useContext(Context);
   const [favMovieList, setFavMovieList] = useState([]);
   const [ratedMovieList, setRatedMovieList] = useState([]);
-  const fetchFavMovieFromDatabase = async () => {
-    try {
-      const movieListFromDB = await fetchFavMovie();
-
-      setFavMovieList(movieListFromDB);
-      //console.log("fetched favMovie: ", movieListFromDB);
-    } catch (error) {
-      console.log("Error fetching favMovie list:", error);
-    }
+  const fetchFavMovieFromDatabase = () => {
+    axios
+      .get(`${apiBaseUrl}/user/${username}/favmovie`)
+      .then((response) => setFavMovieList(response.data))
+      .catch((error) => {
+        console.error("Error getting fav movie list", error);
+      });
   };
-  const fetchRatedMovieFromDatabase = async () => {
-    try {
-      const movieListFromDB = await fetchRatedMovie();
-
-      setRatedMovieList(movieListFromDB);
-      //console.log("fetched ratedMovie: ", movieListFromDB);
-    } catch (error) {
-      console.log("Error fetching ratedMovie list:", error);
-    }
+  const fetchRatedMovieFromDatabase = () => {
+    axios
+      .get(`${apiBaseUrl}/user/${username}/rating`)
+      .then((response) => setRatedMovieList(response.data))
+      .catch((error) => {
+        console.error("Error getting rated movie list", error);
+      });
   };
 
   const { suggestedMovieList, setSuggestedMovieList } = useContext(Context);
@@ -156,17 +154,17 @@ const List2 = ({
                   className="flex flex-row justify-start h-40 p-px bg-teal-500 border-2 border-blue-800"
                   onPress={() => {
                     navigation.navigate("MyMovieDetails", {
-                      movie_id: item.favMovieId,
+                      movie_id: item.tmdbId,
                       header: item.name,
                       origin: "moviemy",
                     });
                   }}
                 >
                   <View className="w-fit">
-                    {item.posterImageUrl ? (
+                    {item.posterUrl ? (
                       <Image
                         source={{
-                          uri: `https://image.tmdb.org/t/p/w154/${item.posterImageUrl}`,
+                          uri: `https://image.tmdb.org/t/p/w154/${item.posterUrl}`,
                         }}
                         className="w-24 h-full mr-1 rounded-lg"
                       />
@@ -181,15 +179,15 @@ const List2 = ({
                     <Text className="text-lg font-bold text-[#0d253f]">
                       {item.name}
                     </Text>
-                    {item.releaseDate ? (
+                    {item.date ? (
                       <Text className="font-light text-violet-800">
-                        {"Release date: " + item.releaseDate}
+                        {"Release date: " + item.date}
                       </Text>
                     ) : null}
                   </View>
                 </TouchableOpacity>
               )}
-              keyExtractor={(item) => item.favMovieId}
+              keyExtractor={(item) => item.tmdbId}
             />
           ) : (
             <View className="flex items-center justify-center w-full h-full bg-teal-500">
@@ -216,7 +214,7 @@ const List2 = ({
                   }}
                 >
                   <View className="w-fit">
-                    {item.posterImageUrl ? (
+                    {item.posterUrl ? (
                       <Image
                         source={{
                           uri: `https://image.tmdb.org/t/p/w154/${item.posterImageUrl}`,
@@ -261,17 +259,17 @@ const List2 = ({
                 className="flex flex-row justify-start h-40 p-px bg-teal-500 border-2 border-blue-800"
                 onPress={() => {
                   navigation.navigate("MyMovieDetails", {
-                    movie_id: item.ratedMovieId,
+                    movie_id: item.tmdbId,
                     header: item.name,
                     origin: "moviemy",
                   });
                 }}
               >
                 <View className="w-fit">
-                  {item.posterImageUrl ? (
+                  {item.posterUrl ? (
                     <Image
                       source={{
-                        uri: `https://image.tmdb.org/t/p/w154/${item.posterImageUrl}`,
+                        uri: `https://image.tmdb.org/t/p/w154/${item.posterUrl}`,
                       }}
                       className="w-24 h-full mr-1 rounded-lg"
                     />
@@ -286,19 +284,19 @@ const List2 = ({
                   <Text className="text-lg font-bold text-[#0d253f]">
                     {item.name}
                   </Text>
-                  {item.releaseDate ? (
+                  {item.date ? (
                     <Text className="font-light text-violet-800">
-                      {"Release date: " + item.releaseDate}
+                      {"Release date: " + item.date}
                     </Text>
                   ) : null}
                   <View className="flex flex-row items-center">
                     <Text className="font-semibold">Your rating: </Text>
                     <Badge
-                      value={item.ratedValue}
+                      value={item.score}
                       status={
-                        item.ratedValue > 8
+                        item.score > 8
                           ? "success"
-                          : item.ratedValue > 4
+                          : item.score > 4
                           ? "warning"
                           : "error"
                       }
@@ -315,7 +313,7 @@ const List2 = ({
                 </View>
               </TouchableOpacity>
             )}
-            keyExtractor={(item) => item.ratedMovieId}
+            keyExtractor={(item) => item.tmdbId}
           />
         ) : (
           <View className="flex items-center justify-center w-full h-full bg-teal-500">

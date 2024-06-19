@@ -15,6 +15,7 @@ import { Context } from "./Context";
 import { useContext, useState, useEffect, Suspense } from "react";
 import SplashScreen from "./SplashScreen";
 import DiscoverStack from "./Discover";
+import Toast from "react-native-toast-message";
 import {
   setUpDatabase,
   getGenreScoreTableRows,
@@ -103,25 +104,30 @@ function MyTabs() {
   );
 }
 
+const RenderLogin = () => {
+  const { username, setUsername } = useContext(Context);
+  return username ? <MyTabs /> : <LoginScreen />;
+};
+
 const App = () => {
   const [rowCount, setRowCount] = useState(0);
   setUpDatabase();
-  useEffect(() => {
-    const getRowCount = async () => {
-      try {
-        const ListFromDB = await getGenreScoreTableRows();
-        setRowCount(ListFromDB.length);
-        console.log("fetched genreScore main: ", ListFromDB.length);
-        if (ListFromDB.length == 0) {
-          await insertDefaultGenreData();
-        }
-      } catch (error) {
-        console.log("Error fetching genreScore list:", error);
-      }
-    };
-    getRowCount();
-  }, []);
-  console.log(`The table "genreScore" has ${rowCount} rows.`);
+  // useEffect(() => {
+  //   const getRowCount = async () => {
+  //     try {
+  //       const ListFromDB = await getGenreScoreTableRows();
+  //       setRowCount(ListFromDB.length);
+  //       console.log("fetched genreScore main: ", ListFromDB.length);
+  //       if (ListFromDB.length == 0) {
+  //         await insertDefaultGenreData();
+  //       }
+  //     } catch (error) {
+  //       console.log("Error fetching genreScore list:", error);
+  //     }
+  //   };
+  //   getRowCount();
+  // }, []);
+  //console.log(`The table "genreScore" has ${rowCount} rows.`);
   // if (rowCount == 0) {
   //   insertDefaultGenreData();
   // }
@@ -130,7 +136,8 @@ const App = () => {
     <SafeAreaProvider>
       <ContextProvider>
         <NavigationContainer>
-          <MyTabs />
+          <RenderLogin />
+          <Toast />
         </NavigationContainer>
       </ContextProvider>
     </SafeAreaProvider>

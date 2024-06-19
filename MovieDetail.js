@@ -5,6 +5,7 @@ import React, {
   useContext,
   useCallback,
 } from "react";
+import { updateGenreScore } from "./updateGenreScore";
 import { View, Text, ScrollView, Image, TouchableOpacity } from "react-native";
 import ForyouMovieStack from "./ForYouMovie";
 import { apiBaseUrl } from "./API";
@@ -55,7 +56,7 @@ function MovieDetail({ route, navigation }) {
         options={{ headerTitle: header }}
       />
       <Stack.Screen
-        name="MovieReview"
+        name="MovieComment"
         component={Review}
         initialParams={{ id: movie_id, type: "movie" }}
         options={{ headerTitle: `Reviews for: ${header}` }}
@@ -82,6 +83,7 @@ function MovieDetail({ route, navigation }) {
 }
 
 const MovieDetailInfo = ({ route }) => {
+  const { username } = useContext(Context);
   const [sliderValue, setSliderValue] = useState(5);
   const navigation2 = useNavigation();
   const [modalVisible, setModalVisible] = useState(false);
@@ -90,6 +92,7 @@ const MovieDetailInfo = ({ route }) => {
   const [isLoading, setIsLoading] = useState(true);
   const [genre, setGenre] = useState("");
   const [genreId, setGenreId] = useState("");
+  const [genreIdList, setGenreIdList] = useState([]);
   const [recommendations, setRecommendations] = useState([]);
   const [isFavorited, setIsFavorited] = useState(false);
   const [isRated, setIsRated] = useState(false);
@@ -109,53 +112,11 @@ const MovieDetailInfo = ({ route }) => {
       ? "SuggestionsMovieDetail"
       : "MyMovieDetails";
 
-  const checkFavStatus = async () => {
-    try {
-      const isFaved = await checkExistedInFavMovie(movie_id);
-      setIsFavorited(isFaved);
-      //console.log("isFaved: ", isFaved);
-    } catch (error) {
-      console.log("Error checking fav status:", error);
-    }
-  };
-  const handleInsertFavMovie = async (movieId, posterImageUrl, name, date) => {
-    try {
-      await insertFavMovie(movieId, posterImageUrl, name, date);
-      //fetchFavMovieFromDatabase(); // Fetch updated after deleting
-    } catch (error) {
-      console.error("Error inserting fav movie", error);
-    }
-  };
-
-  const checkRatedStatus = async () => {
-    try {
-      const isRatedInDb = await checkExistedInRatedMovie(movie_id);
-      //console.log(isRatedInDb);
-      if (isRatedInDb.length > 0) {
-        setIsRated(isRatedInDb[0]);
-        setSliderValue(isRatedInDb[0].ratedValue);
-        setLocalRatings(isRatedInDb[0].ratedValue);
-        //console.log("isRatedInDb: ", isRatedInDb[0]);
-      }
-    } catch (error) {
-      console.log("Error checking rated status:", error);
-    }
-  };
-
-  const handleDeleteFavMovie = async (movieId) => {
-    try {
-      await deleteFavMovie(movieId);
-      // fetchFavMovieFromDatabase(); // Fetch updated after deleting
-    } catch (error) {
-      console.error("Error delete fav movie", error);
-    }
-  };
-
-  const GetMovieInfo = () => {
+  const GetMovieInfo = async () => {
     axios
       .get(`${apiBaseUrl}/movie/${movie_id}`)
       .then((res) => {
-        //console.log("movies info: ", res.data);
+        //console.log("movies info: ", res.data.poster_path);
         setMovieDetail(res.data);
         setGenre(res.data.genres.map((genre) => genre.name).join(", "));
         setGenreId(res.data.genres);
@@ -165,32 +126,52 @@ const MovieDetailInfo = ({ route }) => {
         let gerneIdList = res.data.genres
           .map((genre) => genre.genreId)
           .join(", ");
-        //console.log("genres info: ", gerneIdList);
+        setGenreIdList(gerneIdList);
+
         axios
-          .get(`${apiBaseUrl}/movie/search-by-genre?genreIds=${gerneIdList}`)
+          .get(`${apiBaseUrl}/user/${username}/favandratings`)
           .then((response) => {
-            //console.log(response.data);
-            setRecommendations(response.data);
+            for (let item of response.data.favMovies) {
+              if (item.tmdbId == movie_id) {
+                setIsFavorited(true);
+                break;
+              }
+            }
+            for (let item of response.data.ratings) {
+              if (item.tmdbId == movie_id) {
+                setSliderValue(item.score);
+                setLocalRatings(item.score);
+                setIsRated(item);
+                break;
+              }
+            }
+            axios
+              .get(
+                `${apiBaseUrl}/movie/search-by-genre?genreIds=${gerneIdList}`
+              )
+              .then((response) => {
+                //console.log(response.data);
+                setRecommendations(response.data);
+              })
+              .catch((err) => {
+                console.error(err);
+              });
           })
           .catch((err) => {
-            console.error(err);
+            console.error("Error fetching fav and rating:", err);
           });
-        setIsLoading(false);
       })
       .catch((error) => {
         console.error(error);
+      })
+      .finally(() => {
         setIsLoading(false);
       });
   };
-  // useEffect(() => {
-  //   GetMovieInfo();
-  // }, []);
 
   useFocusEffect(
     useCallback(() => {
       setIsLoading(true);
-      checkFavStatus();
-      checkRatedStatus();
       fetchRecentMovieFromDB();
       GetMovieInfo();
     }, [])
@@ -200,59 +181,59 @@ const MovieDetailInfo = ({ route }) => {
       const movieList = await fetchRecentMovie();
       if (movieList.length > 0) {
         setRecentMovie(movieList);
-        //console.log("fetched recentMovie: ", movieList);
       }
     } catch (error) {
-      console.log("Error fetching recentMovie:", error);
+      console.error("Error fetching recentMovie:", error);
       return;
     }
   };
-  const fetchScoreFromDatabase = async (id) => {
-    try {
-      const scoreDict = await getGenreScore(id);
-      const score = scoreDict[0].score;
-      //console.log("fetched score: ", score);
-      return score;
-    } catch (error) {
-      console.log("Error fetching score:", error);
-      return;
-    }
+  const addFavMovie = async (posterImageUrl, movieName, date) => {
+    axios
+      .post(`${apiBaseUrl}/user/${username}/favmovie`, {
+        id: movie_id,
+        name: movieName,
+        date: date,
+        poster: posterImageUrl,
+      })
+      .then(() => {
+        console.log("Added fav movie", movie_id);
+      })
+      .catch((err) => {
+        console.error("Error adding fav movie", err);
+      });
   };
-  const updateScoreInDatabase = async (
-    genreId,
-    currentScore,
-    value,
-    isAdding
-  ) => {
-    try {
-      await updateScore(genreId, currentScore, value, isAdding);
-      //fetchFavMovieFromDatabase(); // Fetch updated after deleting
-    } catch (error) {
-      console.error("Error updating score", error);
-    }
+  const deleteFavMovie = async () => {
+    axios
+      .delete(`${apiBaseUrl}/user/${username}/favmovie/${movie_id}`)
+      .then(() => {
+        console.log("Delete fav movie success:", movie_id);
+      })
+      .catch((err) => {
+        console.error("Error delete favmovie:", err);
+      });
   };
-
   const handleHeartPress = async (posterImageUrl, movieName, date) => {
-    //console.log("HeartPressed");
     const newState = !isFavorited;
     setIsFavorited(newState);
-    //console.log(genreId);
     if (newState) {
-      handleInsertFavMovie(movie_id, posterImageUrl, movieName, `${date}`);
+      await addFavMovie(posterImageUrl, movieName, date);
+      let genreDict = {};
       for (let genreItem of genreId) {
         const genre_id = genreItem.genreId;
-        const score = await fetchScoreFromDatabase(genre_id);
-        //console.log(score);
-        await updateScoreInDatabase(genre_id, score, 2, newState);
+        genreDict[`${genre_id}`] = 2;
       }
+      //console.log(genreDict);
+      updateGenreScore(genreDict, username);
     } else {
-      handleDeleteFavMovie(movie_id);
+      //console.log("FALSE");
+      await deleteFavMovie();
+      let genreDict = {};
       for (let genreItem of genreId) {
         const genre_id = genreItem.genreId;
-        const score = await fetchScoreFromDatabase(genre_id);
-        //console.log(score);
-        await updateScoreInDatabase(genre_id, score, 2, newState);
+        genreDict[`${genre_id}`] = -2;
       }
+      //console.log(genreDict);
+      updateGenreScore(genreDict, username);
     }
   };
 
@@ -265,9 +246,8 @@ const MovieDetailInfo = ({ route }) => {
   ) : (
     <>
       <RatingModal
+        updateGenreScore={updateGenreScore}
         oldRating={localRatings}
-        updateScoreInDatabase={updateScoreInDatabase}
-        fetchScoreFromDatabase={fetchScoreFromDatabase}
         genreId={genreId}
         modalVisible={modalVisible}
         setModalVisible={setModalVisible}
@@ -351,12 +331,12 @@ const MovieDetailInfo = ({ route }) => {
             </TouchableOpacity>
           </View>
 
-          {isRated && isRated.ratedValue ? (
+          {isRated && isRated.score ? (
             <Text className="text-base italic text-sky-600">
               <Text className="text-lg font-semibold text-black">
                 Your rating:{" "}
               </Text>
-              {isRated.ratedValue}
+              {isRated.score}
             </Text>
           ) : localRatings ? (
             <Text className="text-base italic text-sky-600">
@@ -366,6 +346,7 @@ const MovieDetailInfo = ({ route }) => {
               {localRatings}
             </Text>
           ) : null}
+          <Text>From TMDB</Text>
           {movieDetail.overview ? (
             <>
               <Text className="text-lg font-semibold">Sypnosis:</Text>
@@ -430,6 +411,20 @@ const MovieDetailInfo = ({ route }) => {
                 : `${movieDetail.runtime} minutes`}
             </Text>
           ) : null}
+        </View>
+        <View className="flex flex-row items-center w-full mt-4 justify-evenly">
+          <TouchableOpacity
+            onPress={() => {
+              navigation2.navigate("MovieComment", {
+                genreIdList: genreIdList,
+              });
+            }}
+            className="h-16  w-[60%] rounded-lg bg-violet-800 justify-center items-center"
+          >
+            <Text className="text-lg font-bold text-teal-500">
+              See Comments
+            </Text>
+          </TouchableOpacity>
         </View>
         {recommendations.length > 0 ? (
           <>
