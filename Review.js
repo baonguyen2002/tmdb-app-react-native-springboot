@@ -26,10 +26,11 @@ const Review = ({ route }) => {
   const [inEdit, setInEdit] = useState(false);
   const { username } = useContext(Context);
   //const [showFullText, setShowFullText] = useState(false);
+  //console.log(id);
   const fetchYourReview = async () => {
     if (type === "movie") {
       axios
-        .get(`${apiBaseUrl}/comment/user/${username}`)
+        .get(`${apiBaseUrl}/comment/${username}/${id}`)
         .then((response) => {
           //console.log(response.data);
           if (response.data.length > 0) {
@@ -322,45 +323,54 @@ const Review = ({ route }) => {
                 </View>
               )}
             </View>
-            <Text>From My MongoDB</Text>
-            <FlatList
-              className="bg-teal-500"
-              data={mongoReview}
-              keyExtractor={(item) => item.username}
-              renderItem={({ item }) => (
-                <View className="mb-3">
-                  <View className="flex flex-row justify-evenly">
-                    <View className="flex flex-row w-[18%] justify-center mt-3">
-                      <Image
-                        source={require("./assets/blank_avatar.jpg")}
-                        className="w-8 h-8 rounded-full"
-                      />
-                    </View>
-                    <View className="border-2 border-black rounded-md w-[80%] self-end px-3 py-2">
-                      <View>
-                        <Text className="font-extrabold">{item.username}:</Text>
-                      </View>
+            {mongoReview.length > 0 ? (
+              <>
+                <Text>From My MongoDB</Text>
+                <FlatList
+                  className="bg-teal-500"
+                  data={mongoReview}
+                  keyExtractor={(item) => item.username}
+                  renderItem={({ item }) => (
+                    <View className="mb-3">
+                      <View className="flex flex-row justify-evenly">
+                        <View className="flex flex-row w-[18%] justify-center mt-3">
+                          <Image
+                            source={require("./assets/blank_avatar.jpg")}
+                            className="w-8 h-8 rounded-full"
+                          />
+                        </View>
+                        <View className="border-2 border-black rounded-md w-[80%] self-end px-3 py-2">
+                          <View>
+                            <Text className="font-extrabold">
+                              {item.username}:
+                            </Text>
+                          </View>
 
-                      <Text>{displayText(item.comment, item.username)}</Text>
-                      {item.comment.length > 100 && (
-                        <TouchableOpacity
-                          onPress={() => {
-                            toggleReadMore(item.username);
-                          }}
-                          className="self-center w-24 border-2 border-teal-500 rounded-xl"
-                        >
-                          <Text className="text-center">
-                            {expandedItems[item.username]
-                              ? "Show Less"
-                              : "Show More"}
+                          <Text>
+                            {displayText(item.comment, item.username)}
                           </Text>
-                        </TouchableOpacity>
-                      )}
+                          {item.comment.length > 100 && (
+                            <TouchableOpacity
+                              onPress={() => {
+                                toggleReadMore(item.username);
+                              }}
+                              className="self-center w-24 border-2 border-teal-500 rounded-xl"
+                            >
+                              <Text className="text-center">
+                                {expandedItems[item.username]
+                                  ? "Show Less"
+                                  : "Show More"}
+                              </Text>
+                            </TouchableOpacity>
+                          )}
+                        </View>
+                      </View>
                     </View>
-                  </View>
-                </View>
-              )}
-            />
+                  )}
+                />
+              </>
+            ) : null}
+
             <Text>From TMDB</Text>
           </>
         }
